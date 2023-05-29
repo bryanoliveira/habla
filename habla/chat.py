@@ -6,7 +6,8 @@ from habla import scanner
 from habla.utils import typewrite
 
 
-logging.basicConfig(level=logging.INFO)
+LOGLEVEL = os.environ.get("LOGLEVEL", "INFO").upper()
+logging.basicConfig(level=LOGLEVEL)
 
 
 def main():
@@ -35,7 +36,15 @@ def main():
     total_characters, context = scanner.recursive_scan(
         args.path, args.path, args.max_depth
     )
-    logging.info(f"Total number of characters in the repository: {total_characters}")
+    total_tokens = anthropic.count_tokens(context)
+    logging.info(f"Total characters: {total_characters}")
+    logging.info(f"Total tokens: {total_tokens}")
+    if total_tokens > 95000 or total_characters > 80000:
+        logging.error(
+            "Your project is too big to be scanned. "
+            "Try to limit the depth of the scan with the -d option."
+        )
+        exit(1)
 
     print("\n\n")
     typewrite(
@@ -54,8 +63,9 @@ def main():
         user_input = input("You: ")
         prompt = (
             anthropic.HUMAN_PROMPT
-            # + " Consider this project source:\n"
-            # + context + "\n"
+            + " You are Hablador, an expert in any kind of software development. Consider this project source:\n"
+            + context
+            + "\n"
             + "Fulfill this request: "
             + user_input
             + anthropic.AI_PROMPT

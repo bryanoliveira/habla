@@ -1,4 +1,4 @@
-import mimetypes
+import magic
 import os
 from pathlib import Path
 from gitignore_parser import rule_from_pattern, handle_negation
@@ -36,7 +36,7 @@ def extended_ignore(full_path, base_dir=None):
 
 
 def is_human_readable(file_path):
-    mime_type, _ = mimetypes.guess_type(file_path)
+    mime_type = magic.from_file(file_path, mime=True)
     if mime_type is not None and mime_type.startswith("text"):
         return True
     return False

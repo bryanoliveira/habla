@@ -6,7 +6,8 @@ from typing import Tuple
 from habla.ignorer import extended_ignore, is_human_readable
 
 
-logging.basicConfig(level=logging.INFO)
+LOGLEVEL = os.environ.get("LOGLEVEL", "INFO").upper()
+logging.basicConfig(level=LOGLEVEL)
 
 
 def recursive_scan(
