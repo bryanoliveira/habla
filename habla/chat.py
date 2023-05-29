@@ -77,9 +77,13 @@ def main():
             model="claude-instant-v1-100k",
             stream=True,
         )
+        last = ""
+        print("Hablador:", end="", flush=True)
         for event in response:
-            print("\rHabla: " + event["completion"], end="")
-        break
+            intermediate_text = event["completion"]
+            print(intermediate_text[len(last) :], end="", flush=True)
+            last = intermediate_text
+        print("\n")
 
 
 if __name__ == "__main__":
