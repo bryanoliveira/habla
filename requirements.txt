@@ -1,2 +1,3 @@
 anthropic>=0.2<0.3
 gitignore-parser==0.1
+python-magic>=0.4<0.5
