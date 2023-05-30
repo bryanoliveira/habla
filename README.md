@@ -1,4 +1,12 @@
-# Habla
+<pre align="center">
+    ___       ___       ___       ___       ___   
+   /\__\     /\  \     /\  \     /\__\     /\  \  
+  /:/__/_   /::\  \   /::\  \   /:/  /    /::\  \ 
+ /::\/\__\ /::\:\__\ /::\:\__\ /:/__/    /::\:\__\
+ \/\::/  / \/\::/  / \:\::/  / \:\  \    \/\::/  /
+   /:/  /    /:/  /   \::/  /   \:\__\     /:/  / 
+   \/__/     \/__/     \/__/     \/__/     \/__/  
+</pre>
 
 Habla is an assistant that helps you with your software development projects. It scans your codebase and uses AI to answer questions and fulfill requests about it.
 

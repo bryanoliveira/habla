@@ -20,9 +20,11 @@ logging.basicConfig(level=LOGLEVEL)
 
 history_file = os.path.join(os.path.expanduser("~"), ".habla_history")
 readline.read_history_file(history_file)
-readline.parse_and_bind("tab: complete")
 readline.set_history_length(1000)
 atexit.register(readline.write_history_file, history_file)
+
+USER_PREFIX = f"{Fore.GREEN}You:{Style.RESET_ALL} "
+HABLA_PREFIX = f"{Fore.BLUE}Habla:{Style.RESET_ALL} "
 
 
 def main():
@@ -90,12 +92,16 @@ def main():
    \/__/     \/__/     \/__/     \/__/     \/__/  """,
         speed=0.002,
     )
-    print("\n\n")
+    typewrite(
+        f"\n\n{HABLA_PREFIX}Hello! I am Habla, an AI assistant created to help you with your {os.path.basename(os.getcwd()) }"
+        " software project. How can I be of assistance today?\n",
+        speed=0.003,
+    )
 
     # configure the conversation
     original_message = (
         anthropic.HUMAN_PROMPT
-        + " You are Habla, an expert in any kind of software development. Consider this project source:\n"
+        + " You are Habla, an expert in any kind of software development which always helps the Human with their requests and always provide examples of solutions. Consider this project source:\n"
         + context
         + "\n"
         + "Fulfill this kind request: "
@@ -104,8 +110,11 @@ def main():
     # chat loop
     console = Console()
     while True:
-        print(f"\r{Fore.GREEN}You:{Style.RESET_ALL} ", end="", flush=True)
+        # get user input and rewrite it parsing any markdown
+        print(f"\r{USER_PREFIX}", end="", flush=True)
         user_input = input().strip()
+        print(f"\033[F\033[K{USER_PREFIX}", end="")
+        console.print(Markdown(f"{user_input}"))
 
         # commands
         if user_input == "/clear":
@@ -127,7 +136,7 @@ def main():
         # print streamed response, token by token
         if args.stream:
             response = ""
-            print(f"\n{Fore.BLUE}Habla:{Style.RESET_ALL} ", end="", flush=True)
+            print(f"{HABLA_PREFIX}", end="", flush=True)
             for event in result:
                 intermediate_text = event["completion"]
                 print(intermediate_text[len(response) :], end="")
@@ -140,7 +149,7 @@ def main():
                 i = 0
                 while not stop_thread:
                     print(
-                        f"\r{Fore.BLUE}Habla:{Style.RESET_ALL} (Thinking... {bar[i % 4]})",
+                        f"\r{HABLA_PREFIX}(Thinking... {bar[i % 4]})",
                         end="",
                         flush=True,
                     )
@@ -148,15 +157,16 @@ def main():
                     i += 1
 
             # think
-            print("")
             bar_thread = Thread(target=show_spinning_bar)
             bar_thread.start()
             response = next(result)["completion"]
             stop_thread = True
             bar_thread.join()
             # respond
-            print(f"\r{Fore.BLUE}Habla:{Style.RESET_ALL}  ", end="", flush=True)
-            console.print(Markdown(response))
+            print(f"\r{HABLA_PREFIX}", end="", flush=True)
+            with console.capture() as capture:
+                console.print(Markdown(response))
+            typewrite(capture.get(), speed=0.001)
         print("\n")
         # configure conversation for next iteration
         conversation[-1] += response
