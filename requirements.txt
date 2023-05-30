@@ -2,3 +2,5 @@ anthropic>=0.2<0.3
 colorama>=0.4<0.5
 gitignore-parser==0.1
 python-magic>=0.4<0.5
+rich>=13.3<13.4
+tqdm>=4.65<4.66
