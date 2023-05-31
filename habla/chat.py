@@ -73,7 +73,7 @@ def main():
     total_tokens = anthropic.count_tokens(context)
     logging.info(f"Total characters: {total_characters}")
     logging.info(f"Total tokens: {total_tokens}")
-    if total_tokens > 95000 or total_characters > 80000:
+    if total_tokens > 95000:
         logging.error(
             "Your project is too big to be scanned. "
             "Try to limit the depth of the scan with the -d option."
