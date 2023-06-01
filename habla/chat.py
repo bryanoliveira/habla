@@ -51,7 +51,7 @@ def main():
         "-t",
         "--max-tokens",
         help="Maximum tokens on the assistant's response",
-        default=400,
+        default=2048,
         type=int,
     )
     parser.add_argument(
@@ -141,6 +141,7 @@ def main():
                 intermediate_text = event["completion"]
                 print(intermediate_text[len(response) :], end="")
                 response = intermediate_text
+            print()
         else:
             stop_thread = False
 
@@ -167,7 +168,7 @@ def main():
             with console.capture() as capture:
                 console.print(Markdown(response))
             typewrite(capture.get(), speed=0.001)
-        print("\n")
+
         # configure conversation for next iteration
         conversation[-1] += response
         conversation.append(anthropic.HUMAN_PROMPT + " ")
