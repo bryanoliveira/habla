@@ -1,5 +1,5 @@
 import os
-from typing import Optional, Union, Iterator
+from typing import Iterator
 
 import anthropic
 from habla.models import BaseModel
@@ -17,8 +17,38 @@ class AnthropicModel(BaseModel):
         self.model = model
         self.max_tokens = max_tokens
         self.stream = stream
-        self.client = anthropic.Client(api_key=os.environ["ANTHROPIC_API_KEY"])
         self.reset_conversation()
+
+        self.client = anthropic.Client(api_key=os.environ["ANTHROPIC_API_KEY"])
+
+    def reset_conversation(self):
+        """Resets the conversation to just the system message."""
+        self.conversation = [
+            f"{anthropic.HUMAN_PROMPT} {self.system_message}",
+        ]
+
+    def add_message(self, message: str, role: str):
+        """Adds a message from the human or AI to the conversation."""
+        assert role in [
+            "user",
+            "assistant",
+        ], "role must be either 'user' or 'assistant'"
+
+        if len(self.conversation) == 1:
+            # only system message
+            self.conversation[-1] += message
+        else:
+            # subsequent messages
+            self.conversation.append(
+                {
+                    "user": anthropic.HUMAN_PROMPT + " ",
+                    "assistant": anthropic.AI_PROMPT + " ",
+                }[role]
+                + message
+            )
+
+    def get_conversation(self) -> str:
+        return "".join(self.conversation)
 
     def count_tokens(self, text: str) -> int:
         return anthropic.count_tokens(text)
@@ -29,7 +59,7 @@ class AnthropicModel(BaseModel):
             anthropic.HUMAN_PROMPT
         ), "last message must be from a human"
 
-        prompt = "".join(self.conversation) + anthropic.AI_PROMPT
+        prompt = self.get_conversation() + anthropic.AI_PROMPT
         response = self.client.completion_stream(
             prompt=prompt,
             stop_sequences=[anthropic.HUMAN_PROMPT],
@@ -37,31 +67,11 @@ class AnthropicModel(BaseModel):
             model=self.model,
             stream=self.stream,
         )
+        partial_response = ""
         for event in response:
             if "completion" in event:
-                yield event["completion"]
+                yield event["completion"][len(partial_response) :]
+                if self.stream:
+                    partial_response = event["completion"]
             else:
                 raise RuntimeError(f"Unknown event {event}")
-
-    def reset_conversation(self):
-        """Resets the conversation to just the system message."""
-        self.conversation = [
-            f"{anthropic.HUMAN_PROMPT} {self.system_message}",
-        ]
-
-    def add_message(self, message: str, role: str):
-        """Adds a message from the human or AI to the conversation."""
-        assert role in ["human", "ai"], "role must be either 'human' or 'ai'"
-
-        if len(self.conversation) == 1:
-            # only system message
-            self.conversation[-1] += message
-        else:
-            # subsequent messages
-            self.conversation.append(
-                {
-                    "human": anthropic.HUMAN_PROMPT + " ",
-                    "ai": anthropic.AI_PROMPT + " ",
-                }[role]
-                + message
-            )
