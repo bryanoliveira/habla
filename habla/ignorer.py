@@ -5,6 +5,7 @@ from gitignore_parser import rule_from_pattern, handle_negation
 
 
 def extended_ignore(full_path, base_dir=None):
+    """Ignores files using .gitignore and .hablaignore rules."""
     if base_dir is None:
         base_dir = os.path.dirname(full_path)
     rules = [
@@ -36,7 +37,6 @@ def extended_ignore(full_path, base_dir=None):
 
 
 def is_human_readable(file_path):
+    """Checks if a file is text/readable based on its MIME type."""
     mime_type = magic.from_file(file_path, mime=True)
-    if mime_type is not None and mime_type.startswith("text"):
-        return True
-    return False
+    return mime_type is not None and mime_type.startswith("text")

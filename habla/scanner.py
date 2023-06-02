@@ -13,6 +13,8 @@ logging.basicConfig(level=LOGLEVEL)
 def recursive_scan(
     original_path: str, current_path: str, max_depth: int, ignore_files: list = []
 ) -> Tuple[int, str]:
+    """Recursively scan files and folders and return total characters and context."""
+
     total_characters = 0
     context = ""
 
@@ -27,7 +29,7 @@ def recursive_scan(
                 with open(current_path, "r", encoding="utf-8", errors="ignore") as f:
                     content = f.read()
                     total_characters = len(content)
-                    logging.debug(f"{total_characters} characters in {rel_path}")
+                    logging.info(f"{total_characters} characters in {rel_path}")
 
                     context = f"\n\n--- Contents of file {rel_path} ({total_characters} characters) ---\n```\n"
                     context += content

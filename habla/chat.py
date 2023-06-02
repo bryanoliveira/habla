@@ -7,7 +7,6 @@ import os
 from threading import Thread
 import time
 
-import anthropic
 from rich.console import Console
 from rich.markdown import Markdown
 
@@ -45,7 +44,7 @@ def main():
         type=int,
     )
     parser.add_argument(
-        "-s", "--stream", help="Stream the assistant response", action="store_true"
+        "--stream", help="Stream the assistant response", action="store_true"
     )
     parser.add_argument(
         "-t",
@@ -55,23 +54,49 @@ def main():
         type=int,
     )
     parser.add_argument(
+        "-v",
+        "--vendor",
+        help="The model vendor to use (Anthropic).",
+        default="anthropic",
+        choices=["anthropic"],
+        type=str,
+    )
+    parser.add_argument(
         "-m",
         "--model",
-        help="The Anthropic model to use.",
+        help="The model to use.",
         default="claude-instant-v1-100k",
         type=str,
     )
+    parser.add_argument(
+        "--system-message",
+        help="The system message to start the conversation.",
+        default="You are Habla, an expert in any kind of software development"
+        + " which always helps the Human with their requests and always provide examples of solutions."
+        + " Consider this project source:\n{context}"
+        + "\nNow, fulfill this kind request: ",
+        type=str,
+    )
     args = parser.parse_args()
-
-    # test api key
-    client = anthropic.Client(api_key=os.environ["ANTHROPIC_API_KEY"])
 
     # scan the project for context
     total_characters, context = scanner.recursive_scan(
         args.path, args.path, args.max_depth
     )
-    total_tokens = anthropic.count_tokens(context)
     logging.info(f"Total characters: {total_characters}")
+
+    # initialize the model
+    if args.vendor == "anthropic":
+        from habla.models import claude
+
+        model = claude.AnthropicModel(
+            model=args.model, system_message=args.system_message.format(context=context)
+        )
+    else:
+        raise ValueError(f"Unknown vendor {args.vendor}")
+
+    # check if the project is too big
+    total_tokens = model.count_tokens(context)
     logging.info(f"Total tokens: {total_tokens}")
     if total_tokens > 95000:
         logging.error(
@@ -98,15 +123,6 @@ def main():
         speed=0.003,
     )
 
-    # configure the conversation
-    original_message = (
-        anthropic.HUMAN_PROMPT
-        + " You are Habla, an expert in any kind of software development which always helps the Human with their requests and always provide examples of solutions. Consider this project source:\n"
-        + context
-        + "\n"
-        + "Fulfill this kind request: "
-    )
-    conversation = [original_message]
     # chat loop
     console = Console()
     while True:
@@ -115,30 +131,16 @@ def main():
         user_input = input().strip()
         print(f"\033[F\033[K{USER_PREFIX}", end="")
         console.print(Markdown(f"{user_input}"))
+        model.add_message(user_input, "human")
 
-        # commands
-        if user_input == "/clear":
-            conversation = [original_message]
-            print("--- Mind cleared. Project context reloaded. ---", flush=True)
-            continue
+        # get streamed response
+        result = model.respond()
 
-        # add message to conversation, generate prompt, and get streamed response
-        conversation[-1] += user_input
-        conversation.append(anthropic.AI_PROMPT)
-        prompt = "".join(conversation)
-        result = client.completion_stream(
-            prompt=prompt,
-            stop_sequences=[anthropic.HUMAN_PROMPT],
-            max_tokens_to_sample=args.max_tokens,
-            model=args.model,
-            stream=args.stream,
-        )
         # print streamed response, token by token
         if args.stream:
-            response = ""
+            response: str = ""
             print(f"{HABLA_PREFIX}", end="", flush=True)
-            for event in result:
-                intermediate_text = event["completion"]
+            for intermediate_text in result:
                 print(intermediate_text[len(response) :], end="")
                 response = intermediate_text
             print()
@@ -160,7 +162,7 @@ def main():
             # think
             bar_thread = Thread(target=show_spinning_bar)
             bar_thread.start()
-            response = next(result)["completion"]
+            response = next(result)
             stop_thread = True
             bar_thread.join()
             # respond
@@ -170,8 +172,7 @@ def main():
             typewrite(capture.get(), speed=0.001)
 
         # configure conversation for next iteration
-        conversation[-1] += response
-        conversation.append(anthropic.HUMAN_PROMPT + " ")
+        model.add_message(response, "ai")
 
 
 if __name__ == "__main__":
