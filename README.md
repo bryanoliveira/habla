@@ -70,7 +70,20 @@ For example, you can ask:
 
 > Explain the utils.py module
 
-Habla will provide an explanation of the specified module.
+Habla will provide an explanation of the specified module:
+
+<blockquote>
+This module contains some utility functions:
+
+- typewrite() - Prints a text string character by character with a time delay between each character. This gives a 'typewriter' effect.
+- print_divider() - Prints a header text with a divider line under it. The divider line is made of the divider_char repeated to fill the terminal width.  
+
+Some notes:
+
+- It uses the colorama module to print colored text.  
+- It uses time.sleep() to create the delay in typewrite().  
+- It uses os.get_terminal_size() to get the terminal width and print a divider line that fits the terminal.
+</blockquote>
 
 ## CLI Arguments
 
