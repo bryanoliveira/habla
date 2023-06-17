@@ -18,6 +18,8 @@ LOGLEVEL = os.environ.get("LOGLEVEL", "INFO").upper()
 logging.basicConfig(level=LOGLEVEL)
 
 history_file = os.path.join(os.path.expanduser("~"), ".habla_history")
+if not os.path.exists(history_file):
+    open(history_file, "a").close()
 readline.read_history_file(history_file)
 readline.set_history_length(1000)
 atexit.register(readline.write_history_file, history_file)
